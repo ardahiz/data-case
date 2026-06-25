@@ -1,0 +1,12 @@
+# This profile uses DuckDB so the project runs fully locally — no warehouse,
+# no credentials. dbt looks for profiles.yml in ~/.dbt/ by default, but we keep
+# a copy here and point dbt at it via the DBT_PROFILES_DIR env var (see README),
+# so everything stays self-contained in the repo.
+
+nelly_nrr:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: 'nelly_nrr.duckdb'
+      threads: 4

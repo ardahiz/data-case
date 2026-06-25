@@ -1,0 +1,31 @@
+name: 'nelly_nrr'
+version: '1.0.0'
+config-version: 2
+
+profile: 'nelly_nrr'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  nelly_nrr:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table
+
+# Column types are deliberately NOT fully specified here.
+# Candidates may want to set seed column types explicitly rather than let
+# dbt infer them — see seeds/properties.yml for where to do that.
+seeds:
+  nelly_nrr:
+    +schema: raw
