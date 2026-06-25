@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: int_subscription_monthly_revenue
+    description: "Billing actuals aggregated to one row per subscription and invoice month."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+      - name: subscription_id
+        tests:
+          - not_null
+      - name: invoice_month
+        tests:
+          - not_null
+      - name: actual_mrr_eur
+        tests:
+          - not_null
+
+  - name: int_customer_monthly_revenue
+    description: "Billing actuals aggregated to one row per customer and invoice month."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+      - name: invoice_month
+        tests:
+          - not_null
+      - name: actual_mrr_eur
+        tests:
+          - not_null
+
+  - name: int_customer_cohorts
+    description: "One row per customer with cohort assigned to their first positive billing month."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: cohort_month
+        tests:
+          - not_null
+      - name: starting_mrr_eur
+        tests:
+          - not_null
+
+  - name: int_customer_cohort_months
+    description: "Complete customer-month panel from each customer's cohort month through the latest billing month."
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+      - name: cohort_month
+        tests:
+          - not_null
+      - name: revenue_month
+        tests:
+          - not_null
+      - name: months_since_cohort
+        tests:
+          - not_null

@@ -1,5 +1,5 @@
 with source as (
-    select * from {{ ref('billing_invoices') }}
+    select * from {{ ref('src_billing_invoices') }}
 ),
 
 typed as (

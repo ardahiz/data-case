@@ -16,7 +16,7 @@ I used billing invoices (`actual_amount_eur`) as the revenue basis for NRR. CRM 
 
 ## Handling Ambiguous / Messy Records
 
-I deduplicated exact duplicate CRM subscription and invoice IDs in staging. Customer `region`, `segment`, and subscription status are normalized for consistency. Customers with multiple subscriptions are aggregated to customer-month before NRR logic so plan changes and parallel contracts do not double-count cohorts.
+I deduplicated exact duplicate CRM subscription and invoice IDs in staging, and I also handle duplicate raw customer rows by deduplicating `customer_id` in `stg_customers`. Customer `region`, `segment`, and subscription status are normalized for consistency. Customers with multiple subscriptions are aggregated to customer-month before NRR logic so plan changes and parallel contracts do not double-count cohorts.
 
 Some actual invoice amounts are negative, likely credits. I keep those amounts in `current_mrr_eur` and therefore in NRR, because they affect realized revenue. For decomposition fields, I bound retained revenue at zero and classify non-positive current revenue as churned for readability.
 

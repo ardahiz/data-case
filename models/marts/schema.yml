@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: fct_cohort_nrr
+    description: "Cohort-based NRR mart at cohort month by revenue month grain."
+    columns:
+      - name: cohort_month
+        description: "Month in which cohort customers first had positive actual billed revenue."
+        tests:
+          - not_null
+      - name: revenue_month
+        description: "Observed month in the cohort retention curve."
+        tests:
+          - not_null
+      - name: months_since_cohort
+        description: "Number of months elapsed since the cohort month."
+        tests:
+          - not_null
+      - name: cohort_customer_count
+        description: "Number of customers in the cohort still represented in this revenue month."
+        tests:
+          - not_null
+      - name: starting_mrr_eur
+        description: "Sum of cohort customers' actual billed revenue in their cohort month."
+        tests:
+          - not_null
+      - name: current_mrr_eur
+        description: "Sum of cohort customers' actual billed revenue in the revenue month, with missing months as zero."
+        tests:
+          - not_null
+      - name: nrr
+        description: "Net revenue retention: current MRR divided by starting MRR."
+        tests:
+          - not_null
