@@ -1,0 +1,21 @@
+version: 2
+
+# These describe the raw seed data so dbt can document and (optionally) type it.
+# You are free to set explicit column_types under each seed if you want to control
+# how the CSVs are loaded rather than relying on dbt's inference.
+
+seeds:
+  - name: crm_subscriptions
+    description: "Contracts exported from the CRM. Contains SIGNED MRR. One row per contract; customers may have multiple contracts."
+    # Example of how you could pin types (uncomment / adjust as you see fit):
+    # config:
+    #   column_types:
+    #     signed_mrr_eur: double
+    #     start_date: date
+    #     end_date: date
+
+  - name: billing_invoices
+    description: "Monthly invoices from the billing system. Contains ACTUAL invoiced amounts per subscription per month."
+
+  - name: dim_customers
+    description: "Customer attributes from the CRM: region, segment, signup date."

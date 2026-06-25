@@ -1,0 +1,39 @@
+with source as (
+    select * from {{ ref('crm_subscriptions') }}
+),
+
+typed as (
+    select
+        trim(subscription_id) as subscription_id,
+        trim(customer_id) as customer_id,
+        trim(plan) as plan,
+        cast(signed_mrr_eur as double) as signed_mrr_eur,
+        cast(nullif(trim(start_date), '') as date) as start_date,
+        cast(nullif(trim(end_date), '') as date) as end_date,
+        coalesce(nullif(lower(trim(status)), ''), 'unknown') as subscription_status
+    from source
+),
+
+deduped as (
+    select *
+    from (
+        select
+            *,
+            row_number() over (
+                partition by subscription_id
+                order by start_date, end_date nulls last, subscription_status
+            ) as row_number
+        from typed
+    )
+    where row_number = 1
+)
+
+select
+    subscription_id,
+    customer_id,
+    plan,
+    signed_mrr_eur,
+    start_date,
+    end_date,
+    subscription_status
+from deduped

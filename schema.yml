@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: "Cleaned customer attributes with normalized region and segment values."
+    columns:
+      - name: customer_id
+        description: "Unique customer identifier."
+        tests:
+          - not_null
+          - unique
+      - name: region
+        description: "Normalized commercial region."
+        tests:
+          - not_null
+      - name: segment
+        description: "Normalized customer segment."
+        tests:
+          - not_null
+
+  - name: stg_crm_subscriptions
+    description: "Deduplicated CRM subscriptions with typed contract dates and normalized status."
+    columns:
+      - name: subscription_id
+        description: "Unique subscription identifier after removing exact duplicate CRM export rows."
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: "Customer that owns the subscription."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: signed_mrr_eur
+        description: "Signed contract MRR from CRM."
+        tests:
+          - not_null
+
+  - name: stg_billing_invoices
+    description: "Deduplicated billing invoices with typed invoice month and actual invoiced amount."
+    columns:
+      - name: invoice_id
+        description: "Unique invoice identifier after removing exact duplicate invoice export rows."
+        tests:
+          - not_null
+          - unique
+      - name: customer_id
+        description: "Customer billed on the invoice."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_customers')
+              field: customer_id
+      - name: subscription_id
+        description: "Subscription billed on the invoice."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_crm_subscriptions')
+              field: subscription_id
+      - name: invoice_month
+        description: "Month the invoice belongs to."
+        tests:
+          - not_null
+      - name: actual_amount_eur
+        description: "Actual invoiced amount, including credits or partial-month billing."
+        tests:
+          - not_null
