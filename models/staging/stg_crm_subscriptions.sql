@@ -22,10 +22,10 @@ deduped as (
             row_number() over (
                 partition by subscription_id
                 order by start_date, end_date nulls last, subscription_status
-            ) as row_number
+            ) as rn
         from typed
-    )
-    where row_number = 1
+    ) as ranked
+    where rn = 1
 )
 
 select

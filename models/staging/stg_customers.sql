@@ -34,11 +34,11 @@ deduped as (
             *,
             row_number() over (
                 partition by customer_id
-                order by signup_date nulls last,company_name, region, segment
-            ) as row_number
+                order by signup_date nulls last, company_name, region, segment
+            ) as rn
         from cleaned
-    )
-    where row_number = 1
+    ) as ranked
+    where rn = 1
 )
 
 select
