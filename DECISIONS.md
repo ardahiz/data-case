@@ -5,7 +5,6 @@ _Short summary of key decisions that underpin the cohort-based NRR model._
 ## NRR definition & grain
 
 - Cohort: each customer's first month with positive billed revenue (cohort_month).
-- NRR: measured as
 
 - `NRR = sum(current_mrr_eur) / sum(starting_mrr_eur)`
 
@@ -19,8 +18,7 @@ _Short summary of key decisions that underpin the cohort-based NRR model._
 
 ## Handling ambiguous / messy records
 
-- Staging normalizes and deduplicates raw seeds; invoice-level negatives are retained as realized billed
-	amounts and propagated into intermediate/customer-month aggregates (credit classification out of scope).
+- Staging normalizes and deduplicates raw seeds.
 - For retention math, NRR uses a non-negative current revenue value so refund/credit months are treated as
 	zero retained recurring revenue rather than negative retention.
 - Missing months after cohort entry are treated as zero realized revenue.
@@ -36,11 +34,9 @@ _Short summary of key decisions that underpin the cohort-based NRR model._
 
 ## Trade-offs & what you'd improve with more time
 
-- We keep negative invoices as realized revenue to reflect billed activity; a fuller credit/adjustment
-	classification would improve accuracy.
-- Churn inference from billing gaps is pragmatic but imperfect; more reliable churn detection would
-	come from invoice reason codes or payment status reconciliation.
-- With more time: reconcile signed vs billed amounts systematically, add sensitivity tests for
-	cohort definitions, and build a small adjustments layer to isolate non-recurring credits.
+- stg tables are deduped but they are prone to silent data failures. Would add conflict testing with warning severity and remove dedup
+- Reconcilation regions: Country grouping is odd with DACH region but DE CH AT as countries.
+- I used churn inference from billing gaps. It is pragmatic but imperfect. More reliable churn detection would come from crm or invoice reason codes if kept.
+- With more time: reconcile signed vs billed amounts systematically to reason (refund, missing invoice, partial month). Also add sensitivity tests for cohort definitions. 
 
 More context and rationale are in [docs/interview_and_stakeholder_brief.md](docs/interview_and_stakeholder_brief.md#L1).
