@@ -1,5 +1,8 @@
+-- Staging: Invoice transactions table
+-- Unique Key: invoice_id
+-- Purpose: Clean and deduplicate invoice transactions by invoice_id
 with source as (
-    select * from {{ ref('billing_invoices') }}
+    select * from {{ ref('src_billing_invoices') }}
 ),
 
 typed as (

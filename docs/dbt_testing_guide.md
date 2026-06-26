@@ -93,6 +93,8 @@ Test SQL should validate assumptions about those tables and views.
 
 This makes the project easier to review, lets `dbt test` run all checks consistently, and avoids mixing production transformations with validation-only logic.
 
+Note: this project keeps raw seed files unchanged whenever possible. Data quality fixes such as duplicate `customer_id` rows are handled in the staging layer, not by mutating the original seed CSVs.
+
 ## Main Commands
 
 Run models only:

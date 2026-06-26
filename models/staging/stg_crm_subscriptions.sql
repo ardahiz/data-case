@@ -1,5 +1,8 @@
+-- Staging: Subscription master table
+-- Unique Key: subscription_id
+-- Purpose: Clean and deduplicate subscription records by subscription_id
 with source as (
-    select * from {{ ref('crm_subscriptions') }}
+    select * from {{ ref('src_crm_subscriptions') }}
 ),
 
 typed as (
@@ -8,8 +11,8 @@ typed as (
         trim(customer_id) as customer_id,
         trim(plan) as plan,
         cast(signed_mrr_eur as double) as signed_mrr_eur,
-        cast(nullif(trim(start_date), '') as date) as start_date,
-        cast(nullif(trim(end_date), '') as date) as end_date,
+        cast(nullif(trim(cast(start_date as varchar)), '') as date) as start_date,
+        cast(nullif(trim(cast(end_date as varchar)), '') as date) as end_date,
         coalesce(nullif(lower(trim(status)), ''), 'unknown') as subscription_status
     from source
 ),

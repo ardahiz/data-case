@@ -1,31 +1,41 @@
 # Decisions & Assumptions
 
-## NRR Definition & Grain
+_Short summary of key decisions that underpin the cohort-based NRR model._
 
-The final mart, `fct_cohort_nrr`, is at `cohort_month` x `revenue_month` grain. A cohort is defined by each customer's first month with positive actual billed revenue, which avoids assigning customers to a cohort based only on signup dates or credit-only billing months.
+## NRR definition & grain
 
-NRR is calculated as:
+- Cohort: each customer's first month with positive billed revenue (cohort_month).
 
-`sum(current_mrr_eur) / sum(starting_mrr_eur)`
+- `NRR = sum(current_mrr_eur) / sum(starting_mrr_eur)`
 
-for the fixed set of customers in the cohort. Expansion, contraction, and churn are calculated at customer-month level before aggregation. Missing customer-months after cohort entry are treated as zero revenue so churn and temporary billing gaps are visible in the retention curve.
+- Final grain: one row per `cohort_month` × `revenue_month` (cohort-level NRR derived
+	from customer-month aggregates).
 
-## Signed vs. Actual Revenue
+## Signed vs. actual revenue
 
-I used billing invoices (`actual_amount_eur`) as the revenue basis for NRR. CRM signed MRR is useful context, but actual invoice data reflects what the customer was truly billed, including partial months, discounts, credits, and mismatches against contract values. Since NRR is a revenue retention metric, billing is the stronger source of truth.
+- Revenue basis: billing invoices (`actual_amount_eur`) are the source of truth for NRR.
+- CRM `signed` MRR is retained for context and validation but not used in NRR calculations.
 
-## Handling Ambiguous / Messy Records
+## Handling ambiguous / messy records
 
-I deduplicated exact duplicate CRM subscription and invoice IDs in staging. Customer `region`, `segment`, and subscription status are normalized for consistency. Customers with multiple subscriptions are aggregated to customer-month before NRR logic so plan changes and parallel contracts do not double-count cohorts.
+- Staging normalizes and deduplicates raw seeds.
+- For NRR math, if a `current_mrr` of a month<0, it's capped as 0. 
+- In invoice table the `invoice_month` is sparse. During the `customer-month` aggregation, I used a date spine and treated missing rows as 0 realized revenue.
+- There are multiple subscriptions per customer. I worked with first `subscription-month` then `customer-month` level to avoid double counting
 
-Some actual invoice amounts are negative, likely credits. I keep those amounts in `current_mrr_eur` and therefore in NRR, because they affect realized revenue. For decomposition fields, I bound retained revenue at zero and classify non-positive current revenue as churned for readability.
 
-## Modeling Approach
+## Modeling approach
 
-The project is layered as staging -> intermediate -> mart.
+- Layering: `staging` cleans and dedups seeds → `intermediate` builds `subscription-month`
+	then `customer-month` aggregates → `mart` computes cohort NRR.
+- Business logic lives primarily in intermediate models (aggregation, de-duplication, churn rules);
+	the mart performs cohort-level summarization and NRR ratio calculation.
 
-Staging models clean types, normalize dimensions, and deduplicate raw records. Intermediate models aggregate invoices to subscription-month, then customer-month, assign customer cohorts, and create a complete customer-month panel. The mart aggregates customer-level retention metrics into the final cohort NRR table.
+## Trade-offs & what you'd improve with more time
 
-## Trade-Offs & What I'd Improve With More Time
+- stg tables are deduped but they are prone to silent data failures. 
+- Reconcilation regions: Country grouping is odd with DACH region but DE CH AT as countries.
+- I used churn inference from billing gaps. It is pragmatic but imperfect. More reliable churn detection would come from crm or invoice reason codes if kept.
+- With more time: I'd dig deeper on tests, for example I would add conflict testing with warning severity and remove dedup on customer_id level. Also I'd find better naming for the kpis & tables. 
 
-I kept the model focused on monthly actual NRR and did not build a dashboard. With more time, I would add reconciliation checks between signed and actual MRR, investigate negative invoice months with finance stakeholders, and add explicit seed column types in `seeds/properties.yml` to avoid relying on inference.
+More context and rationale are in [docs/interview_and_stakeholder_brief.md](docs/interview_and_stakeholder_brief.md#L1).
