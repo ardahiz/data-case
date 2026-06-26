@@ -1,3 +1,6 @@
+-- Staging: Subscription master table
+-- Unique Key: subscription_id
+-- Purpose: Clean and deduplicate subscription records by subscription_id
 with source as (
     select * from {{ ref('src_crm_subscriptions') }}
 ),

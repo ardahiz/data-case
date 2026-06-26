@@ -1,3 +1,7 @@
+-- Intermediate: Customer cohorts with starting MRR
+-- Unique Key: customer_id
+-- Purpose: Identify customer cohort (first month with positive revenue) and starting MRR for NRR calculation
+-- Note: Only includes customers with at least one month of positive revenue
 with customer_monthly_revenue as (
     select * from {{ ref('int_customer_monthly_revenue') }}
 ),
@@ -12,14 +16,14 @@ first_positive_revenue_month as (
 )
 
 select
-    customer_monthly_revenue.customer_id,
-    customer_monthly_revenue.company_name,
-    customer_monthly_revenue.region,
-    customer_monthly_revenue.segment,
-    customer_monthly_revenue.signup_date,
-    first_positive_revenue_month.cohort_month,
-    customer_monthly_revenue.actual_mrr_eur as starting_mrr_eur
-from first_positive_revenue_month
-inner join customer_monthly_revenue
-    on first_positive_revenue_month.customer_id = customer_monthly_revenue.customer_id
-    and first_positive_revenue_month.cohort_month = customer_monthly_revenue.invoice_month
+    cmr.customer_id,
+    cmr.company_name,
+    cmr.region,
+    cmr.segment,
+    cmr.signup_date,
+    fprm.cohort_month,
+    cmr.actual_mrr_eur as starting_mrr_eur
+from first_positive_revenue_month as fprm
+inner join customer_monthly_revenue as cmr
+    on fprm.customer_id = cmr.customer_id
+    and fprm.cohort_month = cmr.invoice_month

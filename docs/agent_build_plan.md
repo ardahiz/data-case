@@ -84,19 +84,25 @@ Calculated for the original fixed set of customers in the cohort.
 
 ### Retained MRR
 
-The portion of current MRR up to the customer's starting MRR, bounded between zero and starting MRR.
+The portion of starting MRR that persists into a later revenue month, bounded between 0 and starting MRR:
+
+- If `current_mrr <= 0`: retained = 0 (customer churned or had no revenue that month)
+- If `0 < current_mrr < starting_mrr`: retained = `current_mrr` (customer kept part of the base)
+- If `current_mrr >= starting_mrr`: retained = `starting_mrr` (full base retained; excess is expansion)
+
+Example: A customer with 1000 starting MRR who had 600 current MRR retains 600. A customer who had 1500 current MRR retains 1000 (the full base).
 
 ### Expansion MRR
 
-The portion of current MRR above starting MRR.
+The portion of current MRR above starting MRR. Formula: `max(current_mrr - starting_mrr, 0)`. Example: 1000 starting → 1500 current = 500 expansion.
 
 ### Contraction MRR
 
-The positive difference between starting MRR and current MRR when current MRR is above zero but below starting MRR.
+Net downward movement when current MRR is above zero but below starting MRR. Formula: `starting_mrr - current_mrr` when `0 < current_mrr < starting_mrr`. Example: 1000 starting → 600 current = 400 contraction.
 
 ### Churned MRR
 
-Starting MRR when current MRR is zero or negative.
+The full starting MRR of a customer when their current MRR is zero or negative (they stopped generating revenue that month). This separates churn (customer left) from contraction (customer scaled back).
 
 ## Date Definitions
 

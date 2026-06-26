@@ -1,31 +1,44 @@
 # Decisions & Assumptions
 
-## NRR Definition & Grain
+_Short summary of key decisions that underpin the cohort-based NRR model._
 
-The final mart, `fct_cohort_nrr`, is at `cohort_month` x `revenue_month` grain. A cohort is defined by each customer's first month with positive actual billed revenue, which avoids assigning customers to a cohort based only on signup dates or credit-only billing months.
+## NRR definition & grain
 
-NRR is calculated as:
+- Cohort: each customer's first month with positive billed revenue (cohort_month).
+- NRR: measured as
 
-`sum(current_mrr_eur) / sum(starting_mrr_eur)`
+- `NRR = sum(current_mrr_eur) / sum(starting_mrr_eur)`
 
-for the fixed set of customers in the cohort. Expansion, contraction, and churn are calculated at customer-month level before aggregation. Missing customer-months after cohort entry are treated as zero revenue so churn and temporary billing gaps are visible in the retention curve.
+- Final grain: one row per `cohort_month` × `revenue_month` (cohort-level NRR derived
+	from customer-month aggregates).
 
-## Signed vs. Actual Revenue
+## Signed vs. actual revenue
 
-I used billing invoices (`actual_amount_eur`) as the revenue basis for NRR. CRM signed MRR is useful context, but actual invoice data reflects what the customer was truly billed, including partial months, discounts, credits, and mismatches against contract values. Since NRR is a revenue retention metric, billing is the stronger source of truth.
+- Revenue basis: billing invoices (`actual_amount_eur`) are the source of truth for NRR.
+- CRM `signed` MRR is retained for context and validation but not used in NRR calculations.
 
-## Handling Ambiguous / Messy Records
+## Handling ambiguous / messy records
 
-I deduplicated exact duplicate CRM subscription and invoice IDs in staging, and I also handle duplicate raw customer rows by deduplicating `customer_id` in `stg_customers`. Customer `region`, `segment`, and subscription status are normalized for consistency. Customers with multiple subscriptions are aggregated to customer-month before NRR logic so plan changes and parallel contracts do not double-count cohorts.
+- Staging normalizes and deduplicates raw seeds; invoice-level negatives are retained as realized billed
+	amounts and propagated into intermediate/customer-month aggregates (credit classification out of scope).
+- Missing months after cohort entry are treated as zero realized revenue.
+- Multiple subscriptions per customer are rolled up to `customer-month` to avoid double counting; churn
+	is inferred from billing gaps or sustained non-positive revenue rather than CRM lifecycle flags.
 
-Some actual invoice amounts are negative, likely credits. I keep those amounts in `current_mrr_eur` and therefore in NRR, because they affect realized revenue. For decomposition fields, I bound retained revenue at zero and classify non-positive current revenue as churned for readability.
+## Modeling approach
 
-## Modeling Approach
+- Layering: `staging` cleans and harmonizes seeds → `intermediate` builds subscription-month
+	then `customer-month` aggregates → `mart` computes cohort NRR.
+- Business logic lives primarily in intermediate models (aggregation, de-duplication, churn rules);
+	the mart performs cohort-level summarization and NRR ratio calculation.
 
-The project is layered as staging -> intermediate -> mart.
+## Trade-offs & what you'd improve with more time
 
-Staging models clean types, normalize dimensions, and deduplicate raw records. Intermediate models aggregate invoices to subscription-month, then customer-month, assign customer cohorts, and create a complete customer-month panel. The mart aggregates customer-level retention metrics into the final cohort NRR table.
+- We keep negative invoices as realized revenue to reflect billed activity; a fuller credit/adjustment
+	classification would improve accuracy.
+- Churn inference from billing gaps is pragmatic but imperfect; more reliable churn detection would
+	come from invoice reason codes or payment status reconciliation.
+- With more time: reconcile signed vs billed amounts systematically, add sensitivity tests for
+	cohort definitions, and build a small adjustments layer to isolate non-recurring credits.
 
-## Trade-Offs & What I'd Improve With More Time
-
-I kept the model focused on monthly actual NRR and did not build a dashboard. With more time, I would add reconciliation checks between signed and actual MRR, investigate negative invoice months with finance stakeholders, and add explicit seed column types in `seeds/properties.yml` to avoid relying on inference.
+More context and rationale are in [docs/interview_and_stakeholder_brief.md](docs/interview_and_stakeholder_brief.md#L1).

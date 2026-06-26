@@ -1,3 +1,7 @@
+-- Intermediate: Customer cohort months with revenue tracking
+-- Unique Key: customer_id + cohort_month + revenue_month
+-- Purpose: Track revenue changes (retained, expanded, contracted, churned) for each customer in each cohort month
+-- Note: Includes all months from cohort_month onwards within the data range; missing months = 0 revenue
 with customer_cohorts as (
     select * from {{ ref('int_customer_cohorts') }}
 ),
@@ -16,32 +20,33 @@ month_spine as (
 )
 
 select
-    customer_cohorts.customer_id,
-    customer_cohorts.company_name,
-    customer_cohorts.region,
-    customer_cohorts.segment,
-    customer_cohorts.signup_date,
-    customer_cohorts.cohort_month,
-    month_spine.revenue_month,
-    date_diff('month', customer_cohorts.cohort_month, month_spine.revenue_month) as months_since_cohort,
-    customer_cohorts.starting_mrr_eur,
-    coalesce(customer_monthly_revenue.actual_mrr_eur, 0) as current_mrr_eur,
-    least(greatest(coalesce(customer_monthly_revenue.actual_mrr_eur, 0), 0), customer_cohorts.starting_mrr_eur) as retained_mrr_eur,
-    greatest(coalesce(customer_monthly_revenue.actual_mrr_eur, 0) - customer_cohorts.starting_mrr_eur, 0) as expansion_mrr_eur,
+    cc.customer_id,
+    cc.company_name,
+    cc.region,
+    cc.segment,
+    cc.signup_date,
+    cc.cohort_month,
+    ms.revenue_month,
+    date_diff('month', cc.cohort_month, ms.revenue_month) as months_since_cohort,
+    cc.starting_mrr_eur,
+    coalesce(cmr.actual_mrr_eur, 0) as current_mrr_eur,
+
+    least(greatest(coalesce(cmr.actual_mrr_eur, 0), 0), cc.starting_mrr_eur) as retained_mrr_eur,
+    greatest(coalesce(cmr.actual_mrr_eur, 0) - cc.starting_mrr_eur, 0) as expansion_mrr_eur,
     case
-        when coalesce(customer_monthly_revenue.actual_mrr_eur, 0) > 0
-            and coalesce(customer_monthly_revenue.actual_mrr_eur, 0) < customer_cohorts.starting_mrr_eur
-            then customer_cohorts.starting_mrr_eur - coalesce(customer_monthly_revenue.actual_mrr_eur, 0)
+        when coalesce(cmr.actual_mrr_eur, 0) > 0
+            and coalesce(cmr.actual_mrr_eur, 0) < cc.starting_mrr_eur
+            then cc.starting_mrr_eur - coalesce(cmr.actual_mrr_eur, 0)
         else 0
     end as contraction_mrr_eur,
     case
-        when coalesce(customer_monthly_revenue.actual_mrr_eur, 0) <= 0
-            then customer_cohorts.starting_mrr_eur
+        when coalesce(cmr.actual_mrr_eur, 0) <= 0
+            then cc.starting_mrr_eur
         else 0
     end as churned_mrr_eur
-from customer_cohorts
-inner join month_spine
-    on month_spine.revenue_month >= customer_cohorts.cohort_month
-left join customer_monthly_revenue
-    on customer_cohorts.customer_id = customer_monthly_revenue.customer_id
-    and month_spine.revenue_month = customer_monthly_revenue.invoice_month
+from customer_cohorts as cc
+inner join month_spine as ms
+    on ms.revenue_month >= cc.cohort_month
+left join customer_monthly_revenue as cmr
+    on cc.customer_id = cmr.customer_id
+    and ms.revenue_month = cmr.invoice_month

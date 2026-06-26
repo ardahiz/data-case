@@ -1,3 +1,6 @@
+-- Staging: Customer dimension table
+-- Unique Key: customer_id
+-- Purpose: Clean and deduplicate customer master data from source
 with source as (
     select * from {{ ref('src_dim_customers') }}
 ),
@@ -8,7 +11,8 @@ cleaned as (
         trim(company_name) as company_name,
         case
             when nullif(trim(region), '') is null then 'Unknown'
-            when upper(trim(region)) in ('DACH', 'DE', 'GERMANY') then 'DE'
+            when upper(trim(region)) = 'DACH' then 'DACH'  
+            when upper(trim(region)) in ('DE', 'GERMANY') then 'DE'  
             when upper(trim(region)) = 'CH' then 'CH'
             when upper(trim(region)) = 'AT' then 'AT'
             else 'Other'

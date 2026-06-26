@@ -6,6 +6,7 @@ Before changing models, tests, or metric logic, read:
 
 - `docs/agent_rules.md`
 - `docs/agent_build_plan.md`
+- `docs/dbt_testing_guide.md`
 - `docs/interview_and_stakeholder_brief.md`
 - `DECISIONS.md`
 
