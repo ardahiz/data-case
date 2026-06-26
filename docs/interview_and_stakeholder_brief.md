@@ -64,7 +64,8 @@ The important principle is that a date should be named for its business meaning,
 | Metric | Definition |
 | --- | --- |
 | Starting MRR | Customer revenue in the cohort month |
-| Current MRR | Non-negative customer revenue in the measured revenue month used for retention math |
+| Signed current revenue | Raw customer revenue in the measured revenue month |
+| Current MRR | Non-negative customer revenue used for retention math |
 | NRR | Current MRR divided by starting MRR for the original cohort |
 | Retained MRR | Current revenue up to the customer's starting MRR |
 | Expansion MRR | Current revenue above starting MRR |
@@ -140,7 +141,7 @@ Overall, the pipeline is logically aligned with cohort NRR. The most important d
 
 The main caveats are deliberate rather than accidental:
 
-- Negative invoices remain in current MRR because credits and adjustments are realized revenue.
+- Negative invoices remain in signed current revenue; retention math clamps that value to zero.
 - For decomposition, non-positive current revenue is treated as churned MRR, which is simple and explainable but may mix true churn with credits.
 - CRM `status` and `end_date` are not used as the primary churn source because billing actuals are the chosen source of truth.
 - The model answers monthly realized revenue retention, not contracted MRR retention.
