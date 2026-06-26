@@ -29,18 +29,19 @@ select
     ms.revenue_month,
     date_diff('month', cc.cohort_month, ms.revenue_month) as months_since_cohort,
     cc.starting_mrr_eur,
-    coalesce(cmr.actual_mrr_eur, 0) as current_mrr_eur,
+    coalesce(cmr.actual_mrr_eur, 0) as actual_mrr_eur,
+    greatest(coalesce(cmr.actual_mrr_eur, 0), 0) as current_mrr_eur,
 
     least(greatest(coalesce(cmr.actual_mrr_eur, 0), 0), cc.starting_mrr_eur) as retained_mrr_eur,
-    greatest(coalesce(cmr.actual_mrr_eur, 0) - cc.starting_mrr_eur, 0) as expansion_mrr_eur,
+    greatest(greatest(coalesce(cmr.actual_mrr_eur, 0), 0) - cc.starting_mrr_eur, 0) as expansion_mrr_eur,
     case
-        when coalesce(cmr.actual_mrr_eur, 0) > 0
-            and coalesce(cmr.actual_mrr_eur, 0) < cc.starting_mrr_eur
-            then cc.starting_mrr_eur - coalesce(cmr.actual_mrr_eur, 0)
+        when greatest(coalesce(cmr.actual_mrr_eur, 0), 0) > 0
+            and greatest(coalesce(cmr.actual_mrr_eur, 0), 0) < cc.starting_mrr_eur
+            then cc.starting_mrr_eur - greatest(coalesce(cmr.actual_mrr_eur, 0), 0)
         else 0
     end as contraction_mrr_eur,
     case
-        when coalesce(cmr.actual_mrr_eur, 0) <= 0
+        when greatest(coalesce(cmr.actual_mrr_eur, 0), 0) <= 0
             then cc.starting_mrr_eur
         else 0
     end as churned_mrr_eur

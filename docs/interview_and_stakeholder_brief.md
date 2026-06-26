@@ -16,15 +16,21 @@ For customers who joined in a given period, how does their recurring revenue evo
 
 This matters commercially because NRR shows whether existing customers are expanding, contracting, or churning after acquisition.
 
+The pipeline is relevant to this question because it fixes the customer cohort first, then follows that same set of customers across later billing months. Net-new customers who start in later months enter their own cohorts rather than inflating an earlier cohort's NRR.
+
 ## Key Design Choices
 
 ### Billing Actuals As Revenue Source
 
-I used invoices as the source of truth because NRR is a revenue retention metric. CRM signed MRR is useful context, but invoices reflect what was actually billed, including credits, discounts, partial months, and billing adjustments.
+I used invoices as the source of truth because NRR is a revenue retention metric. CRM signed MRR is useful context, but invoices reflect what was actually billed, including credits, discounts, partial months, and billing adjustments. For retention math, I preserve the raw billed amount and also use a non-negative current revenue value so refund or credit months are treated as zero retained recurring revenue rather than negative retention.
 
 ### Customer-Month As The Core Grain
 
 The data has multiple subscriptions per customer. If NRR were calculated directly at subscription level, customers with multiple contracts or plan changes could be double counted. Aggregating to customer-month first makes the metric customer-centric.
+
+### Customer Data Quality Example
+
+Because the raw customer seed contained duplicate `customer_id` rows, the staging layer deduplicates customers on `customer_id` as a data quality safeguard. This keeps the final cohort assignment and retention analysis customer-centric and prevents duplicate customer records from corrupting the cohort grain.
 
 ### First Positive Invoice Month As Cohort Month
 
@@ -33,6 +39,10 @@ I chose first positive actual billed revenue month as `cohort_month`. This avoid
 ### Missing Months As Zero Revenue
 
 For each cohort customer, the model creates a complete monthly panel from cohort month to the latest observed billing month. If there is no invoice in a later month, current revenue is zero. This makes churn and billing gaps visible.
+
+### README As Original Case Instructions
+
+I treated `README.md` as the original case prompt rather than the solution write-up. The implemented solution details live in `DECISIONS.md` and this brief, so the project instructions remain untouched while the modeling choices are documented separately.
 
 ## Date Semantics
 
@@ -54,7 +64,7 @@ The important principle is that a date should be named for its business meaning,
 | Metric | Definition |
 | --- | --- |
 | Starting MRR | Customer revenue in the cohort month |
-| Current MRR | Customer revenue in the measured revenue month |
+| Current MRR | Non-negative customer revenue in the measured revenue month used for retention math |
 | NRR | Current MRR divided by starting MRR for the original cohort |
 | Retained MRR | Current revenue up to the customer's starting MRR |
 | Expansion MRR | Current revenue above starting MRR |
@@ -63,6 +73,19 @@ The important principle is that a date should be named for its business meaning,
 | GRR | Retained MRR divided by starting MRR |
 
 ## Model Structure
+
+Pipeline summary:
+
+```text
+seeds
+  dim_customers
+  crm_subscriptions
+  billing_invoices
+    -> source wrapper models
+    -> staging cleanup and deduplication
+    -> intermediate revenue and cohort models
+    -> fct_cohort_nrr mart
+```
 
 ### Staging
 
@@ -89,6 +112,8 @@ The mart exposes final stakeholder-facing NRR:
 - `fct_cohort_nrr`
 - grain: one row per `cohort_month` and `revenue_month`
 
+It includes cohort size, active and churned customer counts, starting MRR, current MRR, retained MRR, expansion MRR, contraction MRR, churned MRR, NRR, and gross revenue retention.
+
 ## Testing Approach
 
 I kept tests separate from transformation SQL because dbt tests are designed to return failing rows and run consistently in CI or before PR submission.
@@ -102,6 +127,23 @@ Tests cover:
 - no duplicate customer-month rows
 - positive starting MRR for cohorts
 - NRR ratio correctness
+
+Additional checks I would add in a production version:
+
+- invoice `customer_id` matches the customer on the joined subscription
+- explicit accepted-values tests for normalized `region`, `segment`, and `subscription_status`
+- seed column types pinned in `seeds/properties.yml` instead of relying on inference
+
+## Logic Review
+
+Overall, the pipeline is logically aligned with cohort NRR. The most important design choices are customer-month aggregation before cohort logic, first positive actual billing month as the cohort date, and a complete month panel so missing invoices become observable churn or billing gaps.
+
+The main caveats are deliberate rather than accidental:
+
+- Negative invoices remain in current MRR because credits and adjustments are realized revenue.
+- For decomposition, non-positive current revenue is treated as churned MRR, which is simple and explainable but may mix true churn with credits.
+- CRM `status` and `end_date` are not used as the primary churn source because billing actuals are the chosen source of truth.
+- The model answers monthly realized revenue retention, not contracted MRR retention.
 
 ## How To Validate Before Pushing
 

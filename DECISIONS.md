@@ -21,6 +21,8 @@ _Short summary of key decisions that underpin the cohort-based NRR model._
 
 - Staging normalizes and deduplicates raw seeds; invoice-level negatives are retained as realized billed
 	amounts and propagated into intermediate/customer-month aggregates (credit classification out of scope).
+- For retention math, NRR uses a non-negative current revenue value so refund/credit months are treated as
+	zero retained recurring revenue rather than negative retention.
 - Missing months after cohort entry are treated as zero realized revenue.
 - Multiple subscriptions per customer are rolled up to `customer-month` to avoid double counting; churn
 	is inferred from billing gaps or sustained non-positive revenue rather than CRM lifecycle flags.

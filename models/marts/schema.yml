@@ -25,7 +25,7 @@ models:
         tests:
           - not_null
       - name: current_mrr_eur
-        description: "Sum of cohort customers' actual billed revenue in the revenue month, with missing months as zero."
+        description: "Sum of cohort customers' non-negative current revenue in the revenue month, used for retention math with missing months as zero."
         tests:
           - not_null
       - name: nrr
