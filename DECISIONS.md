@@ -36,6 +36,6 @@ _Short summary of key decisions that underpin the cohort-based NRR model._
 - stg tables are deduped but they are prone to silent data failures. 
 - Reconcilation regions: Country grouping is odd with DACH region but DE CH AT as countries.
 - I used churn inference from billing gaps. It is pragmatic but imperfect. More reliable churn detection would come from crm or invoice reason codes if kept.
-- With more time: Find better naming for the kpis & tables. I'd dig deeper on tests, for example I would add conflict testing with warning severity and remove dedup on customer_id level.
+- With more time: I'd dig deeper on tests, for example I would add conflict testing with warning severity and remove dedup on customer_id level. Also I'd find better naming for the kpis & tables. 
 
 More context and rationale are in [docs/interview_and_stakeholder_brief.md](docs/interview_and_stakeholder_brief.md#L1).
